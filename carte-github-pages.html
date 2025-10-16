@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cartographie des partenaires des Restos du Cœur des Yvelines (78)">
+    <meta name="author" content="Restos du Cœur Yvelines">
+    <title>Cartographie des Partenaires - Restos du Cœur Yvelines (78)</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 25px 20px;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header-info {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            opacity: 0.95;
+        }
+        
+        .header-info span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .container {
+            display: flex;
+            height: calc(100vh - 80px);
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: white;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .search-section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .search-box {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .filter-btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+        
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .filter-btn.active {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .btn-all { background: #95a5a6; }
+        .btn-siae { background: #27ae60; }
+        .btn-formation { background: #1abc9c; }
+        .btn-institutionnel { background: #3498db; }
+        .btn-entreprise { background: #9b59b6; }
+        .btn-senior { background: #e67e22; }
+        
+        .stats-section {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .partners-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .category-section {
+            margin-bottom: 25px;
+        }
+        
+        .category-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .partner-card {
+            background: #f8f9fa;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .partner-card:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .partner-card.siae { border-left-color: #27ae60; }
+        .partner-card.formation { border-left-color: #1abc9c; }
+        .partner-card.institutionnel { border-left-color: #3498db; }
+        .partner-card.entreprise { border-left-color: #9b59b6; }
+        .partner-card.senior { border-left-color: #e67e22; }
+        .partner-card.hub { border-left-color: #e74c3c; }
+        
+        .partner-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #2c3e50;
+            margin-bottom: 6px;
+        }
+        
+        .partner-info {
+            font-size: 12px;
+            color: #7f8c8d;
+            line-height: 1.5;
+        }
+        
+        .partner-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+        
+        .badge-haute {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-strategique {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        #map {
+            flex: 1;
+            position: relative;
+            background: #e0e0e0;
+        }
+        
+        .map-legend {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-width: 250px;
+        }
+        
+        .legend-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 12px;
+            color: #555;
+        }
+        
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid white;
+            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 999;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #e74c3c;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-size: 12px;
+        }
+        
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 50vh;
+            }
+            
+            #map {
+                height: 50vh;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 18px;
+            }
+            
+            .header-info {
+                font-size: 12px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .map-legend {
+                display: none;
+            }
+        }
+        
+        /* Popup custom style */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .popup-content {
+            padding: 5px;
+            min-width: 250px;
+        }
+        
+        .popup-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .popup-info {
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        
+        .popup-info strong {
+            color: #2c3e50;
+            min-width: 80px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1>🗺️ Cartographie des Partenaires - Restos du Cœur Yvelines</h1>
+                <p style="font-size: 14px; opacity: 0.9; margin-top: 5px;">Département des Yvelines (78)</p>
+            </div>
+            <div class="header-info">
+                <span>📍 27 Partenaires</span>
+                <span>🏢 6 Catégories</span>
+                <span>📅 Octobre 2025</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Rechercher un partenaire ou une ville...">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn btn-all active" onclick="filterCategory('all')">Tout</button>
+                    <button class="filter-btn btn-siae" onclick="filterCategory('SIAE')">SIAE</button>
+                    <button class="filter-btn btn-formation" onclick="filterCategory('Formation')">Formation</button>
+                    <button class="filter-btn btn-institutionnel" onclick="filterCategory('Institutionnel')">Publics</button>
+                    <button class="filter-btn btn-entreprise" onclick="filterCategory('Entreprise')">Entreprises</button>
+                    <button class="filter-btn btn-senior" onclick="filterCategory('Seniors')">Seniors</button>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">27</div>
+                        <div class="stat-label">Partenaires</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">15+</div>
+                        <div class="stat-label">Villes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">6</div>
+                        <div class="stat-label">SIAE</div>
+                    </div>
+     
